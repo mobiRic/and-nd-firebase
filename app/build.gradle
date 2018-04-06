@@ -7,21 +7,81 @@ repositories {
     }
 }
 
+ext {
+    appVersions = [
+            code: 1,
+            name: '0.0.1'
+    ]
+    buildVersions = [
+            compileSdk: 24,
+            minSdk    : 16,
+            targetSdk : 24,
+    ]
+    libVersions = [
+            supportLib: '24.2.1',
+            glide     : '3.6.1',
+    ]
+    testVersions = [
+            junit     : '4.12',
+            testRunner: '1.0.1',
+            espresso  : '3.0.1',
+    ]
+}
+
 android {
     compileSdkVersion 24
-    buildToolsVersion "24.0.1"
+    buildToolsVersion "24.0.3"
 
     defaultConfig {
-        applicationId "com.google.firebase.udacity.friendlychat"
-        minSdkVersion 16
-        targetSdkVersion 24
-        versionCode 1
-        versionName "1.0"
+        applicationId "mobiric.demo.udacity.friendlychat"
+
+        minSdkVersion buildVersions.minSdk
+        //noinspection OldTargetApi
+        targetSdkVersion buildVersions.targetSdk
+        versionCode appVersions.code
+        versionName appVersions.name
     }
+
+    signingConfigs {
+        debug {
+            // keystore properties stored in an external file - do not commit to repo
+            def keystorePropertiesFile = rootProject.file("keystore_debug.properties")
+            if (keystorePropertiesFile.exists()) {
+                def keystoreProperties = new Properties()
+                keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+
+                storeFile file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+            }
+        }
+        release {
+            // keystore properties stored in an external file - do not commit to repo
+            def keystorePropertiesFile = rootProject.file("keystore_release.properties")
+            if (keystorePropertiesFile.exists()) {
+                def keystoreProperties = new Properties()
+                keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+
+                storeFile file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+            }
+        }
+    }
+
     buildTypes {
+        debug {
+            applicationIdSuffix ".debug"
+
+            signingConfig signingConfigs.debug
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+
+            signingConfig signingConfigs.release
         }
     }
     packagingOptions {
@@ -33,11 +93,11 @@ android {
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
-    testCompile 'junit:junit:4.12'
+    testCompile "junit:junit:${testVersions.junit}"
 
-    compile 'com.android.support:design:24.2.0'
-    compile 'com.android.support:appcompat-v7:24.2.0'
+    compile "com.android.support:design:${libVersions.supportLib}"
+    compile "com.android.support:appcompat-v7:${libVersions.supportLib}"
 
     // Displaying images
-    compile 'com.github.bumptech.glide:glide:3.6.1'
+    compile "com.github.bumptech.glide:glide:${libVersions.glide}"
 }
