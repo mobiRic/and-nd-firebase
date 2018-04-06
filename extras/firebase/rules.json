@@ -1,0 +1,11 @@
+{
+	"rules": {
+		"messages": {
+			".read": "auth != null",
+			".write": "auth != null",
+			"$id": {
+				".validate": "(newData.hasChildren(['name', 'text']) && !newData.hasChildren(['photoUrl'])) || (newData.hasChildren(['name', 'photoUrl']) && !newData.hasChildren(['text']))"
+			}
+		}
+	}
+}
