@@ -15,16 +15,19 @@
  */
 package com.google.firebase.udacity.friendlychat;
 
+import android.support.annotation.Nullable;
+
 public class FriendlyMessage {
 
     private String text;
     private String name;
+    @Nullable
     private String photoUrl;
 
     public FriendlyMessage() {
     }
 
-    public FriendlyMessage(String text, String name, String photoUrl) {
+    public FriendlyMessage(String text, String name, @Nullable String photoUrl) {
         this.text = text;
         this.name = name;
         this.photoUrl = photoUrl;
