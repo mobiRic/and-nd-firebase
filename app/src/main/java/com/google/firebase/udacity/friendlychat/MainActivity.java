@@ -45,6 +45,8 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.remoteconfig.FirebaseRemoteConfig;
+import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageMetadata;
 import com.google.firebase.storage.StorageReference;
@@ -52,7 +54,9 @@ import com.google.firebase.storage.UploadTask;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import mobi.glowworm.lib.ui.widget.Boast;
 
@@ -63,7 +67,10 @@ public class MainActivity extends AppCompatActivity {
     private static final int RC_PHOTO_PICKER = 2;
 
     public static final String ANONYMOUS = "anonymous";
-    public static final int DEFAULT_MSG_LENGTH_LIMIT = 1000;
+
+    public static final int DEFAULT_MSG_LENGTH_LIMIT = 50;
+    private static final String KEY_MSG_LENGTH_LIMIT = "friendly_msg_limit";
+
     private static final String CHILD_MESSAGES = "messages";
     private static final String CHILD_PHOTOS = "chat_photos";
 
@@ -86,6 +93,8 @@ public class MainActivity extends AppCompatActivity {
     private FirebaseStorage mFirebaseStorage;
     private StorageReference mChatPhotosStorageReference;
 
+    private FirebaseRemoteConfig mFirebaseRemoteConfig;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -96,6 +105,7 @@ public class MainActivity extends AppCompatActivity {
         mFirebaseDatabase = FirebaseDatabase.getInstance();
         mFirebaseAuth = FirebaseAuth.getInstance();
         mFirebaseStorage = FirebaseStorage.getInstance();
+        mFirebaseRemoteConfig = FirebaseRemoteConfig.getInstance();
 
         mMessagesDatabaseReference = mFirebaseDatabase.getReference().child(CHILD_MESSAGES);
         mChatPhotosStorageReference = mFirebaseStorage.getReference().child(CHILD_PHOTOS);
@@ -138,7 +148,7 @@ public class MainActivity extends AppCompatActivity {
             public void afterTextChanged(Editable editable) {
             }
         });
-        mMessageEditText.setFilters(new InputFilter[]{new InputFilter.LengthFilter(DEFAULT_MSG_LENGTH_LIMIT)});
+        applyMessageLengthLimit(DEFAULT_MSG_LENGTH_LIMIT);
 
         // Send button sends a message and clears the EditText
         mSendButton.setOnClickListener(new View.OnClickListener() {
@@ -163,6 +173,15 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         };
+
+        FirebaseRemoteConfigSettings config = new FirebaseRemoteConfigSettings.Builder()
+                .setDeveloperModeEnabled(BuildConfig.DEBUG)
+                .build();
+        mFirebaseRemoteConfig.setConfigSettings(config);
+        Map<String, Object> defaultConfigMap = new HashMap<>(1);
+        defaultConfigMap.put(KEY_MSG_LENGTH_LIMIT, DEFAULT_MSG_LENGTH_LIMIT);
+        mFirebaseRemoteConfig.setDefaults(defaultConfigMap);
+        fetchRemoteConfig();
     }
 
     private void saveTextMessage(String name, @NonNull String text) {
@@ -332,5 +351,37 @@ public class MainActivity extends AppCompatActivity {
             mMessagesDatabaseReference.removeEventListener(mChildEventListener);
             mChildEventListener = null;
         }
+    }
+
+    private void fetchRemoteConfig() {
+        long cachExpiration = 3600;
+        if (mFirebaseRemoteConfig.getInfo().getConfigSettings().isDeveloperModeEnabled()) {
+            cachExpiration = 0;
+        }
+        mFirebaseRemoteConfig.fetch(cachExpiration)
+                .addOnSuccessListener(new OnSuccessListener<Void>() {
+                    @Override
+                    public void onSuccess(Void aVoid) {
+                        mFirebaseRemoteConfig.activateFetched();
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        // apply cached settings even if new settings failed
+                        applyRemoteConfigMessageLengthLimit();
+                    }
+                });
+    }
+
+    private void applyRemoteConfigMessageLengthLimit() {
+        long limit = mFirebaseRemoteConfig.getLong(KEY_MSG_LENGTH_LIMIT);
+        applyMessageLengthLimit((int) limit);
+    }
+
+    private void applyMessageLengthLimit(int length) {
+        mMessageEditText.setFilters(new InputFilter[]{
+                new InputFilter.LengthFilter(length),
+        });
     }
 }
