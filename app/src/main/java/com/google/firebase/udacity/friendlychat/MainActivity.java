@@ -168,6 +168,21 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        switch (requestCode) {
+            case RC_FIREBASE_LOGIN: {
+                if (resultCode == RESULT_CANCELED) {
+                    finish();
+                    return;
+                }
+                break;
+            }
+        }
+    }
+
+    @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.main_menu, menu);
@@ -176,6 +191,13 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.sign_out_menu: {
+                AuthUI.getInstance().signOut(this);
+                return true;
+            }
+        }
+
         return super.onOptionsItemSelected(item);
     }
 
@@ -186,7 +208,7 @@ public class MainActivity extends AppCompatActivity {
         );
         Intent loginIntent = AuthUI.getInstance()
                 .createSignInIntentBuilder()
-                .setIsSmartLockEnabled(true)
+                .setIsSmartLockEnabled(false)
                 .setAvailableProviders(providers)
                 .build();
         startActivityForResult(loginIntent, RC_FIREBASE_LOGIN);
