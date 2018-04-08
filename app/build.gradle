@@ -13,14 +13,15 @@ ext {
             name: '0.0.1'
     ]
     buildVersions = [
-            compileSdk: 24,
+            compileSdk: 27,
             minSdk    : 16,
-            targetSdk : 24,
+            targetSdk : 27,
     ]
     libVersions = [
             supportLib: '24.2.1',
             glide     : '3.6.1',
-            firebase  : '12.0.1'
+            firebase  : '12.0.1',
+            firebaseUi: '3.3.0',
     ]
     testVersions = [
             junit     : '4.12',
@@ -30,8 +31,8 @@ ext {
 }
 
 android {
-    compileSdkVersion 24
-    buildToolsVersion "24.0.3"
+    compileSdkVersion buildVersions.compileSdk
+    buildToolsVersion "27.0.3"
 
     defaultConfig {
         applicationId "mobiric.demo.udacity.friendlychat"
@@ -98,9 +99,17 @@ dependencies {
 
     compile "com.android.support:design:${libVersions.supportLib}"
     compile "com.android.support:appcompat-v7:${libVersions.supportLib}"
+    compile "com.android.support:animated-vector-drawable:${libVersions.supportLib}"
+    compile "com.android.support:design:${libVersions.supportLib}"
+    compile "com.android.support:customtabs:${libVersions.supportLib}"
+    compile "com.android.support:cardview-v7:${libVersions.supportLib}"
 
     compile "com.google.firebase:firebase-core:${libVersions.firebase}"
     compile "com.google.firebase:firebase-database:${libVersions.firebase}"
+    compile "com.google.firebase:firebase-auth:${libVersions.firebase}"
+    compile "com.google.android.gms:play-services-auth:${libVersions.firebase}"
+
+    compile "com.firebaseui:firebase-ui-auth:${libVersions.firebaseUi}"
 
     // Displaying images
     compile "com.github.bumptech.glide:glide:${libVersions.glide}"
