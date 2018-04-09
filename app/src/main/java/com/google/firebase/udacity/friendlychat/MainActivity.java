@@ -21,6 +21,8 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.text.Editable;
 import android.text.InputFilter;
 import android.text.TextUtils;
@@ -32,7 +34,6 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
-import android.widget.ListView;
 import android.widget.ProgressBar;
 
 import com.firebase.ui.auth.AuthUI;
@@ -45,6 +46,7 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.Query;
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig;
 import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings;
 import com.google.firebase.storage.FirebaseStorage;
@@ -68,13 +70,14 @@ public class MainActivity extends AppCompatActivity {
 
     public static final String ANONYMOUS = "anonymous";
 
+    public static final int DEFAULT_MSG_COUNT = 5;
     public static final int DEFAULT_MSG_LENGTH_LIMIT = 50;
     private static final String KEY_MSG_LENGTH_LIMIT = "friendly_msg_limit";
 
     private static final String CHILD_MESSAGES = "messages";
     private static final String CHILD_PHOTOS = "chat_photos";
 
-    private ListView mMessageListView;
+    private RecyclerView mMessageRecyclerView;
     private MessageAdapter mMessageAdapter;
     private ProgressBar mProgressBar;
     private ImageButton mPhotoPickerButton;
@@ -86,6 +89,7 @@ public class MainActivity extends AppCompatActivity {
     private FirebaseDatabase mFirebaseDatabase;
     private DatabaseReference mMessagesDatabaseReference;
     private ChildEventListener mChildEventListener = null;
+    private Query mMessagesQuery;
 
     private FirebaseAuth mFirebaseAuth;
     private FirebaseAuth.AuthStateListener mAuthStateListener;
@@ -108,19 +112,19 @@ public class MainActivity extends AppCompatActivity {
         mFirebaseRemoteConfig = FirebaseRemoteConfig.getInstance();
 
         mMessagesDatabaseReference = mFirebaseDatabase.getReference().child(CHILD_MESSAGES);
+        mMessagesQuery = mMessagesDatabaseReference.limitToLast(DEFAULT_MSG_COUNT);
         mChatPhotosStorageReference = mFirebaseStorage.getReference().child(CHILD_PHOTOS);
 
         // Initialize references to views
         mProgressBar = (ProgressBar) findViewById(R.id.progressBar);
-        mMessageListView = (ListView) findViewById(R.id.messageListView);
         mPhotoPickerButton = (ImageButton) findViewById(R.id.photoPickerButton);
         mMessageEditText = (EditText) findViewById(R.id.messageEditText);
         mSendButton = (Button) findViewById(R.id.sendButton);
 
         // Initialize message ListView and its adapter
-        List<FriendlyMessage> friendlyMessages = new ArrayList<>();
-        mMessageAdapter = new MessageAdapter(this, R.layout.item_message, friendlyMessages);
-        mMessageListView.setAdapter(mMessageAdapter);
+        mMessageRecyclerView = (RecyclerView) findViewById(R.id.messageListView);
+        assert mMessageRecyclerView != null;
+        setupRecyclerView(mMessageRecyclerView);
 
         // Initialize progress bar
         mProgressBar.setVisibility(ProgressBar.INVISIBLE);
@@ -182,6 +186,14 @@ public class MainActivity extends AppCompatActivity {
         defaultConfigMap.put(KEY_MSG_LENGTH_LIMIT, DEFAULT_MSG_LENGTH_LIMIT);
         mFirebaseRemoteConfig.setDefaults(defaultConfigMap);
         fetchRemoteConfig();
+    }
+
+    private void setupRecyclerView(RecyclerView recyclerView) {
+        List<FriendlyMessage> friendlyMessages = new ArrayList<>();
+
+        ((LinearLayoutManager) recyclerView.getLayoutManager()).setStackFromEnd(true);
+        mMessageAdapter = new MessageAdapter(friendlyMessages);
+        recyclerView.setAdapter(mMessageAdapter);
     }
 
     private void saveTextMessage(String name, @NonNull String text) {
@@ -320,6 +332,7 @@ public class MainActivity extends AppCompatActivity {
                 public void onChildAdded(DataSnapshot dataSnapshot, String s) {
                     FriendlyMessage message = dataSnapshot.getValue(FriendlyMessage.class);
                     mMessageAdapter.add(message);
+                    mMessageRecyclerView.scrollToPosition(mMessageAdapter.getItemCount() - 1);
                 }
 
                 @Override
@@ -342,13 +355,13 @@ public class MainActivity extends AppCompatActivity {
 
                 }
             };
-            mMessagesDatabaseReference.addChildEventListener(mChildEventListener);
+            mMessagesQuery.addChildEventListener(mChildEventListener);
         }
     }
 
     private void detachDatabaseReadListener() {
         if (mChildEventListener != null) {
-            mMessagesDatabaseReference.removeEventListener(mChildEventListener);
+            mMessagesQuery.removeEventListener(mChildEventListener);
             mChildEventListener = null;
         }
     }
