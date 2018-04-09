@@ -154,7 +154,7 @@ public class MainActivity extends AppCompatActivity {
         mSendButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                saveTextMessage(mMessageEditText.getText().toString(), MainActivity.this.mUsername);
+                saveTextMessage(MainActivity.this.mUsername, mMessageEditText.getText().toString());
 
                 // Clear input box
                 mMessageEditText.setText("");
