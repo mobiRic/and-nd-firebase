@@ -16,31 +16,35 @@ const functions = require('firebase-functions');
 exports.emojify =
   functions.database
     .ref('/messages/{pushId}/text')
-    .onWrite(event => {
+    .onWrite((snapshot, context) => {
 
-      if (!event.data.val()) {
+      if (!snapshot.after.val()) {
         console.log("delete event found - exiting");
         return null;
       }
-
-      if (event.data.previous.val()) {
+      if (snapshot.before.val()) {
         console.log("rewrite event found - exiting");
         return null;
       }
 
-      const original = event.data.val();
+      const original = snapshot.after.val();
       const emojiText = emojifyText(original);
+      if (original === emojiText) {
+        return null;
+      }
 
-      return event.data.ref.set(emojiText);
+      console.log("rewriting emoji text");
+      return snapshot.after.ref.set(emojiText);
     });
 
 /**
  * Replaces certain text strings with emoji icons.
  * @param text message entered by the user
- * @return message with embedded emoji icons
+ * @return string message with embedded emoji icons
  */
 function emojifyText(text) {
   return text
     .replace(/\blol\b/ig, "😂")
-    .replace(/\bcat\b/ig, "😸");
+    .replace(/\bcat\b/ig, "😸")
+    .toString();
 }
