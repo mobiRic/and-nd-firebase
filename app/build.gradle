@@ -113,6 +113,7 @@ dependencies {
     compile "com.google.android.gms:play-services-auth:${libVersions.firebase}"
 
     compile "com.firebaseui:firebase-ui-auth:${libVersions.firebaseUi}"
+    compile "com.firebaseui:firebase-ui-database:${libVersions.firebaseUi}"
 
     // Displaying images
     compile "com.github.bumptech.glide:glide:${libVersions.glide}"

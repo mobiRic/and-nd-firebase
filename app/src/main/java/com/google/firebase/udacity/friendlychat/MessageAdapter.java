@@ -1,7 +1,6 @@
 package com.google.firebase.udacity.friendlychat;
 
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -10,21 +9,19 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
+import com.firebase.ui.database.FirebaseRecyclerAdapter;
+import com.firebase.ui.database.FirebaseRecyclerOptions;
 
-import java.util.ArrayList;
-import java.util.List;
+public class MessageAdapter extends FirebaseRecyclerAdapter<FriendlyMessage, MessageAdapter.ViewHolder> {
 
-public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.ViewHolder> {
-
-    @NonNull
-    private final List<FriendlyMessage> mMessages;
-
-    public MessageAdapter(@Nullable List<FriendlyMessage> messages) {
-        if (messages == null) {
-            mMessages = new ArrayList<>();
-        } else {
-            mMessages = new ArrayList<>(messages);
-        }
+    /**
+     * Initialize a {@link RecyclerView.Adapter} that listens to a Firebase query. See
+     * {@link FirebaseRecyclerOptions} for configuration options.
+     *
+     * @param options
+     */
+    public MessageAdapter(@NonNull FirebaseRecyclerOptions<FriendlyMessage> options) {
+        super(options);
     }
 
     @NonNull
@@ -36,8 +33,7 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.ViewHold
     }
 
     @Override
-    public void onBindViewHolder(@NonNull final ViewHolder holder, int position) {
-        FriendlyMessage message = mMessages.get(position);
+    protected void onBindViewHolder(@NonNull ViewHolder holder, int position, @NonNull FriendlyMessage message) {
         boolean isPhoto = message.getPhotoUrl() != null;
         if (isPhoto) {
             holder.messageTextView.setVisibility(View.GONE);
@@ -51,27 +47,6 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.ViewHold
             holder.messageTextView.setText(message.getText());
         }
         holder.authorTextView.setText(message.getName());
-    }
-
-    public void add(FriendlyMessage message) {
-        int newPosition = mMessages.size();
-        mMessages.add(message);
-        notifyItemInserted(newPosition);
-    }
-
-    public void clear() {
-        int count = mMessages.size();
-        if (count == 0) {
-            return;
-        }
-
-        mMessages.clear();
-        notifyItemRangeRemoved(0, count);
-    }
-
-    @Override
-    public int getItemCount() {
-        return mMessages.size();
     }
 
     class ViewHolder extends RecyclerView.ViewHolder {

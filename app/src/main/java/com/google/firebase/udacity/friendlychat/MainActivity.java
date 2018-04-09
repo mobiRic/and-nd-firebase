@@ -37,13 +37,11 @@ import android.widget.ImageButton;
 import android.widget.ProgressBar;
 
 import com.firebase.ui.auth.AuthUI;
+import com.firebase.ui.database.FirebaseRecyclerOptions;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.ChildEventListener;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
@@ -54,7 +52,6 @@ import com.google.firebase.storage.StorageMetadata;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -70,14 +67,13 @@ public class MainActivity extends AppCompatActivity {
 
     public static final String ANONYMOUS = "anonymous";
 
-    public static final int DEFAULT_MSG_COUNT = 5;
+    public static final int DEFAULT_MSG_COUNT = 1000;
     public static final int DEFAULT_MSG_LENGTH_LIMIT = 50;
     private static final String KEY_MSG_LENGTH_LIMIT = "friendly_msg_limit";
 
     private static final String CHILD_MESSAGES = "messages";
     private static final String CHILD_PHOTOS = "chat_photos";
 
-    private RecyclerView mMessageRecyclerView;
     private MessageAdapter mMessageAdapter;
     private ProgressBar mProgressBar;
     private ImageButton mPhotoPickerButton;
@@ -88,8 +84,8 @@ public class MainActivity extends AppCompatActivity {
 
     private FirebaseDatabase mFirebaseDatabase;
     private DatabaseReference mMessagesDatabaseReference;
-    private ChildEventListener mChildEventListener = null;
     private Query mMessagesQuery;
+    private FirebaseRecyclerOptions<FriendlyMessage> mMessageOptions;
 
     private FirebaseAuth mFirebaseAuth;
     private FirebaseAuth.AuthStateListener mAuthStateListener;
@@ -122,7 +118,7 @@ public class MainActivity extends AppCompatActivity {
         mSendButton = (Button) findViewById(R.id.sendButton);
 
         // Initialize message ListView and its adapter
-        mMessageRecyclerView = (RecyclerView) findViewById(R.id.messageListView);
+        RecyclerView mMessageRecyclerView = (RecyclerView) findViewById(R.id.messageListView);
         assert mMessageRecyclerView != null;
         setupRecyclerView(mMessageRecyclerView);
 
@@ -188,11 +184,20 @@ public class MainActivity extends AppCompatActivity {
         fetchRemoteConfig();
     }
 
-    private void setupRecyclerView(RecyclerView recyclerView) {
-        List<FriendlyMessage> friendlyMessages = new ArrayList<>();
-
+    private void setupRecyclerView(final RecyclerView recyclerView) {
         ((LinearLayoutManager) recyclerView.getLayoutManager()).setStackFromEnd(true);
-        mMessageAdapter = new MessageAdapter(friendlyMessages);
+
+        mMessageOptions = new FirebaseRecyclerOptions.Builder<FriendlyMessage>()
+                .setQuery(mMessagesQuery, FriendlyMessage.class)
+                .build();
+        mMessageAdapter = new MessageAdapter(mMessageOptions);
+        mMessageAdapter.registerAdapterDataObserver(new RecyclerView.AdapterDataObserver() {
+            @Override
+            public void onItemRangeInserted(int positionStart, int itemCount) {
+                super.onItemRangeInserted(positionStart, itemCount);
+                recyclerView.scrollToPosition(positionStart + itemCount - 1);
+            }
+        });
         recyclerView.setAdapter(mMessageAdapter);
     }
 
@@ -216,7 +221,6 @@ public class MainActivity extends AppCompatActivity {
             mFirebaseAuth.removeAuthStateListener(mAuthStateListener);
         }
         detachDatabaseReadListener();
-        mMessageAdapter.clear();
     }
 
     @Override
@@ -235,8 +239,10 @@ public class MainActivity extends AppCompatActivity {
                     finish();
                     return;
                 }
-
-                Boast.showText(MainActivity.this, "Welcome, " + mUsername);
+                FirebaseUser user = mFirebaseAuth.getCurrentUser();
+                if (user != null) {
+                    Boast.showText(MainActivity.this, "Welcome, " + user.getDisplayName());
+                }
 
                 break;
             }
@@ -322,48 +328,14 @@ public class MainActivity extends AppCompatActivity {
     private void onSignedOut() {
         mUsername = ANONYMOUS;
         detachDatabaseReadListener();
-        mMessageAdapter.clear();
     }
 
     private void attachDatabaseReadListener() {
-        if (mChildEventListener == null) {
-            mChildEventListener = new ChildEventListener() {
-                @Override
-                public void onChildAdded(DataSnapshot dataSnapshot, String s) {
-                    FriendlyMessage message = dataSnapshot.getValue(FriendlyMessage.class);
-                    mMessageAdapter.add(message);
-                    mMessageRecyclerView.scrollToPosition(mMessageAdapter.getItemCount() - 1);
-                }
-
-                @Override
-                public void onChildChanged(DataSnapshot dataSnapshot, String s) {
-
-                }
-
-                @Override
-                public void onChildRemoved(DataSnapshot dataSnapshot) {
-
-                }
-
-                @Override
-                public void onChildMoved(DataSnapshot dataSnapshot, String s) {
-
-                }
-
-                @Override
-                public void onCancelled(DatabaseError databaseError) {
-
-                }
-            };
-            mMessagesQuery.addChildEventListener(mChildEventListener);
-        }
+        mMessageAdapter.startListening();
     }
 
     private void detachDatabaseReadListener() {
-        if (mChildEventListener != null) {
-            mMessagesQuery.removeEventListener(mChildEventListener);
-            mChildEventListener = null;
-        }
+        mMessageAdapter.stopListening();
     }
 
     private void fetchRemoteConfig() {
