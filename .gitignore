@@ -6,3 +6,4 @@ build
 app/google-services.json
 .DS_Store
 firebase_cloud/functions/node_modules/
+firebase_cloud/functions/firebase-debug.log
