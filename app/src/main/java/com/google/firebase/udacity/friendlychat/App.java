@@ -19,7 +19,7 @@ public class App extends Application {
         If the push receiver needs to be able to access updated data directly then
         keep this value false.
          */
-        FirebaseDatabase.getInstance().setPersistenceEnabled(false);
+        FirebaseDatabase.getInstance().setPersistenceEnabled(true);
     }
 
 }
