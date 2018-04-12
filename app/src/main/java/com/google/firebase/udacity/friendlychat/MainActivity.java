@@ -67,11 +67,11 @@ public class MainActivity extends AppCompatActivity {
 
     public static final String ANONYMOUS = "anonymous";
 
-    public static final int DEFAULT_MSG_COUNT = 1000;
+    public static final int DEFAULT_MSG_COUNT = 5;
     public static final int DEFAULT_MSG_LENGTH_LIMIT = 50;
     private static final String KEY_MSG_LENGTH_LIMIT = "friendly_msg_limit";
 
-    private static final String CHILD_MESSAGES = "messages";
+    public static final String CHILD_MESSAGES = "messages";
     private static final String CHILD_PHOTOS = "chat_photos";
 
     private MessageAdapter mMessageAdapter;
